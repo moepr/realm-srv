@@ -1,5 +1,5 @@
 [log]
-level = "debug"
+level = "off"
 output = "realm.log"
 
 [network]
@@ -9,3 +9,7 @@ use_udp = true
 [[endpoints]]
 listen = "127.0.0.1:61010"
 remote = "_easytier._tcp.sismoe.top:0"
+
+[[endpoints]]
+listen = "127.0.0.1:8334"
+remote = "_wg._udp.sismoe.top:0"

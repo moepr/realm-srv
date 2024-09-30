@@ -81,6 +81,7 @@ pub fn build_lazy(conf: Option<ResolverConfig>, opts: Option<ResolverOpts>) {
 pub async fn lookup_srv(srv_host: String) -> (String, u16) {
     unsafe {
         log::info!("lookup_srv===={}",srv_host);
+        DNS.clear_cache();
         let result = DNS.srv_lookup(srv_host).await;
         let srv_records = result.unwrap();
         for record in srv_records {
