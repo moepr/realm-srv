@@ -78,6 +78,23 @@ pub fn build_lazy(conf: Option<ResolverConfig>, opts: Option<ResolverOpts>) {
     }
 }
 
+pub async fn lookup_srv(srv_host: String) -> (String, u16) {
+    unsafe {
+        log::info!("lookup_srv===={}",srv_host);
+        let result = DNS.srv_lookup(srv_host).await;
+        let srv_records = result.unwrap();
+        for record in srv_records {
+            let target = record.target().to_string();
+            let port = record.port();
+            log::info!("lookup_srv result====target:{} port:{}", target, port);
+            return (target, port);
+        }
+        log::info!("lookup_srv error");
+        (String::from("0.0.0.0"), 0)
+    }
+}
+
+
 /// Lookup ip with global dns resolver.
 pub async fn resolve_ip(ip: &str) -> Result<LookupIp> {
     unsafe {

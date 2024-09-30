@@ -1,0 +1,11 @@
+[log]
+level = "debug"
+output = "realm.log"
+
+[network]
+no_tcp = false
+use_udp = true
+
+[[endpoints]]
+listen = "127.0.0.1:61010"
+remote = "_easytier._tcp.sismoe.top:0"

@@ -67,7 +67,10 @@ impl EndpointConf {
             let port = iter.next().unwrap().parse::<u16>().unwrap();
             let addr = iter.next().unwrap().to_string();
             // test addr
-            remote.to_socket_addrs().unwrap().next().unwrap();
+            //log::info!("addr:{} port:{}", addr, port);
+            if port != 0 && !addr.contains("._tcp.") && !addr.contains("._udp.") {
+                remote.to_socket_addrs().unwrap().next().unwrap();
+            }
             RemoteAddr::DomainName(addr, port)
         }
     }
