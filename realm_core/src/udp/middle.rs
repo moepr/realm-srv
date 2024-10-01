@@ -8,7 +8,7 @@ use super::{socket, batched};
 
 use crate::trick::Ref;
 use crate::time::timeoutfut;
-use crate::dns::{lookup_srv, resolve_addr};
+use crate::dns::resolve_addr;
 use crate::endpoint::{RemoteAddr, ConnectOpts};
 
 use batched::{Packet, SockAddrStore};
@@ -106,33 +106,6 @@ mod registry {
     }
 }
 
-/**
- * 判断是否是SRV格式
- * */
- pub async fn is_srv(raddr: &RemoteAddr) -> bool {
-    match raddr {
-        RemoteAddr::SocketAddr(addr) => addr.port() == 0 && (addr.ip().to_string().contains("._tcp.") || addr.ip().to_string().contains("._udp.")),
-        RemoteAddr::DomainName(domain, port) => *port == 0 && (domain.contains("._tcp.") || domain.contains("._udp.")),
-    }
-}
-
-//解析srv
-pub async fn resolve_srv(raddr: &RemoteAddr) -> RemoteAddr {
-    match raddr {
-        RemoteAddr::SocketAddr(socket_addr) => {
-            let (new_ip, new_port) = lookup_srv(socket_addr.ip().to_string()).await;
-            if let Ok(new_socket_addr) = format!("{}:{}", new_ip, new_port).parse::<SocketAddr>() {
-                return RemoteAddr::SocketAddr(new_socket_addr)
-            }
-        }
-        RemoteAddr::DomainName(domain, _port) => {
-            let (new_ip, new_port) = lookup_srv(domain.to_string()).await;
-            return RemoteAddr::DomainName(new_ip, new_port);
-        }
-    }
-    raddr.clone() // 返回对修改后 addr 的引用
-}
-
 pub async fn associate_and_relay(
     lis: Ref<UdpSocket>,
     rname: Ref<RemoteAddr>,
@@ -144,15 +117,9 @@ pub async fn associate_and_relay(
     loop {
         registry.batched_recv_on(&lis).await?;
         log::debug!("[udp]entry batched recvfrom[{}]", registry.count());
-        let raddr;
-        if is_srv(&rname).await {
-            let srv_raddr = resolve_srv(&rname).await;
-            let new_raddr = &srv_raddr;
-            raddr = resolve_addr(&new_raddr).await?.iter().next().unwrap();
-        } else {
-            raddr = resolve_addr(&rname).await?.iter().next().unwrap();
-        }
+        let raddr = resolve_addr(&rname).await?.iter().next().unwrap();
         log::debug!("[udp]{} resolved as {}", *rname, raddr);
+
         registry.group_by_addr();
         for pkts in registry.group_iter() {
             let laddr = pkts[0].addr.clone().into();

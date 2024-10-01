@@ -2,7 +2,6 @@
 
 use std::io::{Result, Error, ErrorKind};
 use std::net::SocketAddr;
-
 use hickory_resolver as resolver;
 use resolver::TokioAsyncResolver;
 use resolver::system_conf::read_system_conf;
@@ -78,23 +77,6 @@ pub fn build_lazy(conf: Option<ResolverConfig>, opts: Option<ResolverOpts>) {
     }
 }
 
-pub async fn lookup_srv(srv_host: String) -> (String, u16) {
-    unsafe {
-        log::info!("lookup_srv===={}",srv_host);
-        DNS.clear_cache();
-        let result = DNS.srv_lookup(srv_host).await;
-        let srv_records = result.unwrap();
-        for record in srv_records {
-            let target = record.target().to_string();
-            let port = record.port();
-            log::info!("lookup_srv result====target:{} port:{}", target, port);
-            return (target, port);
-        }
-        log::info!("lookup_srv error");
-        (String::from("0.0.0.0"), 0)
-    }
-}
-
 
 /// Lookup ip with global dns resolver.
 pub async fn resolve_ip(ip: &str) -> Result<LookupIp> {
@@ -112,6 +94,49 @@ pub async fn resolve_addr(addr: &RemoteAddr) -> Result<LookupRemoteAddr<'_>> {
     match addr {
         SocketAddr(addr) => Ok(NoLookup(addr)),
         DomainName(ip, port) => resolve_ip(ip).await.map(|ip| Dolookup(ip, *port)),
+    }
+}
+
+/// Lookup socketaddr with global dns resolver.
+pub async fn resolve_addr_srv(addr: &RemoteAddr) -> Result<LookupRemoteAddr<'_>> {
+    use RemoteAddr::*;
+    use LookupRemoteAddr::*;
+    match addr {
+        SocketAddr(socket_addr) => {
+            if socket_addr.port() == 0 && (socket_addr.ip().to_string().contains("._tcp.") || socket_addr.ip().to_string().contains("._udp.")) {
+                //解析srv
+                let (new_domain, new_port) = lookup_srv(socket_addr.ip().to_string()).await;
+                resolve_ip(&new_domain).await.map(|ip| Dolookup(ip, new_port))
+            } else {
+                Ok(NoLookup(socket_addr))
+            }
+        },
+        DomainName(domain, port) => {
+            if *port == 0 && (domain.contains("._tcp.") || domain.contains("._udp.")) {
+                //解析srv
+                let (new_domain, new_port) = lookup_srv(domain.to_string()).await;
+                resolve_ip(&new_domain).await.map(|ip| Dolookup(ip, new_port))
+            } else {
+                resolve_ip(domain).await.map(|ip| Dolookup(ip, *port))
+            }
+        },
+    }
+}
+
+pub async fn lookup_srv(srv_host: String) -> (String, u16) {
+    unsafe {
+        log::info!("lookup_srv===={}",srv_host);
+        DNS.clear_cache();
+        let result = DNS.srv_lookup(srv_host).await;
+        let srv_records = result.unwrap();
+        for record in srv_records {
+            let target = record.target().to_string();
+            let port = record.port();
+            log::info!("lookup_srv result====target:{} port:{}", target, port);
+            return (target, port);
+        }
+        log::info!("lookup_srv error");
+        (String::from("0.0.0.0"), 0)
     }
 }
 
