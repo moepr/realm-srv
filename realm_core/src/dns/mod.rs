@@ -126,7 +126,7 @@ pub async fn resolve_addr_srv(addr: &RemoteAddr) -> Result<LookupRemoteAddr<'_>>
 pub async fn resolve_srv(srv_host: String) -> (String, u16) {
     unsafe {
         log::info!("resolve_srv===={}",srv_host);
-        DNS.clear_cache();
+        //DNS.clear_cache();
         let result = DNS.srv_lookup(srv_host).await;
         let srv_records = result.unwrap();
         for record in srv_records {
