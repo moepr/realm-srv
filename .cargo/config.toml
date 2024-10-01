@@ -1,0 +1,22 @@
+[build]
+target = "x86_64-pc-windows-msvc"
+
+[target.x86_64-unknown-linux-gnu]
+linker = "x86_64-linux-gnu-gcc"
+ar = "x86_64-linux-gnu-gcc-ar"
+
+[target.aarch64-unknown-linux-gnu]
+linker = "aarch64-linux-gnu-gcc"
+ar = "aarch64-linux-gnu-gcc-ar"
+
+[target.x86_64-linux-android]
+linker = "C:/Users/lyy/scoop/apps/android-clt/current/ndk/27.0.11902837/toolchains/llvm/prebuilt/windows-x86_64/bin/x86_64-linux-android21-clang"
+
+[target.aarch64-linux-android]
+linker = "C:/Users/lyy/scoop/apps/android-clt/current/ndk/27.0.11902837/toolchains/llvm/prebuilt/windows-x86_64/bin/aarch64-linux-android21-clang"
+
+[profile.release]
+opt-level = 3
+
+[profile.dev]
+opt-level = 1
