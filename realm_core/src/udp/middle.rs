@@ -8,7 +8,7 @@ use super::{socket, batched};
 
 use crate::trick::Ref;
 use crate::time::timeoutfut;
-use crate::dns::resolve_addr;
+use crate::dns::resolve_addr_srv;
 use crate::endpoint::{RemoteAddr, ConnectOpts};
 
 use batched::{Packet, SockAddrStore};
@@ -117,7 +117,7 @@ pub async fn associate_and_relay(
     loop {
         registry.batched_recv_on(&lis).await?;
         log::debug!("[udp]entry batched recvfrom[{}]", registry.count());
-        let raddr = resolve_addr(&rname).await?.iter().next().unwrap();
+        let raddr = resolve_addr_srv(&rname).await?.iter().next().unwrap();
         log::debug!("[udp]{} resolved as {}", *rname, raddr);
 
         registry.group_by_addr();
